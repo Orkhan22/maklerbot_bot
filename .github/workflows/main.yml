@@ -2,23 +2,24 @@ name: Bina AZ Bot
 
 on:
   schedule:
-    - cron: '*/5 * * * *' # Bu botu hər 5 dəqiqədən bir öz-özünə işlədir
-  workflow_dispatch: # Düymə də qalsın ki, istəyəndə özün də basasan
+    - cron: '*/15 * * * *' # Hər 15 dəqiqədən bir (ən optimalı budur)
+  workflow_dispatch:      # Düymə ilə işlətmə imkanı
 
 jobs:
-  run-bot:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Kodu götür
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-      - name: Python quraşdır
-        uses: actions/setup-python@v4
+      - name: Set up Python
+        uses: actions/setup-python@v2
         with:
           python-version: '3.9'
 
-      - name: Kitabxanaları yüklə
-        run: pip install requests beautifulsoup4
+      - name: Install dependencies
+        run: |
+          pip install requests beautifulsoup4
 
-      - name: Botu işlət
-        run: python main
+      - name: Run bot
+        run: python main.py
