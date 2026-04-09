@@ -1,6 +1,29 @@
-- name: Dəyişiklikləri yadda saxla
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+name: Bina AZ Bot
+
+on:
+  schedule:
+    - cron: '*/15 * * * *' # Hər 15 dəqiqədən bir işləyir
+  workflow_dispatch: # Lazım olanda özün də düymə ilə işlədə biləsən
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodu kopyala
+        uses: actions/checkout@v3
+
+      - name: Python-u quraşdır
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Kitabxanaları yüklə
+        run: pip install -r requirements.txt
+
+      - name: Botu işə sal
+        run: python main.py
+
+      - name: Dəyişiklikləri yadda saxla
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
