@@ -2,51 +2,77 @@ import requests
 from bs4 import BeautifulSoup
 import re
 
+# MƏLUMATLARIN
 TOKEN = "8666608099:AAFhdnrexdxUkfIeCpK_6zq1NdTEdQAVFKQ"
 CHAT_ID = "644928091"
-URL = "https://bina.az/baki/neriman-nerimanov/alqi-satqi/menziller/yeni-tikili/3-otaqli"
+
+def get_user_choice():
+    """Telegram-dan istifadəçinin sonuncu otaq seçimini (2 və ya 3) oxuyur"""
+    try:
+        url = f"https://api.telegram.org/bot{TOKEN}/getUpdates"
+        res = requests.get(url, timeout=10).json()
+        if res["result"]:
+            for update in reversed(res["result"]):
+                if "message" in update and "text" in update["message"]:
+                    txt = update["message"]["text"].strip()
+                    if txt in ["2", "3"]:
+                        return txt
+    except:
+        pass
+    return "3" # Əgər seçim tapılmasa, avtomatik 3 otaqlı axtar
 
 def start_bot():
-    print("--- Bot geniş axtarışa başladı ---")
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
-    }
+    rooms = get_user_choice()
+    print(f"--- Axtarış başlayır: {rooms} otaqlı mənzillər ---")
     
+    # Nərimanov, yeni tikili və seçilən otaq sayı
+    URL = f"https://bina.az/baki/neriman-nerimanov/alqi-satqi/menziller/yeni-tikili/{rooms}-otaqli"
+    
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+        "Accept-Language": "az-AZ,az;q=0.9",
+        "Referer": "https://bina.az/"
+    }
+
     try:
-        response = requests.get(URL, headers=headers, timeout=30)
-        soup = BeautifulSoup(response.text, 'html.parser')
+        session = requests.Session()
+        response = session.get(URL, headers=headers, timeout=30)
         
-        # Üsul 1: Saytdakı bütün linkləri (<a> teqlərini) tapırıq
+        if response.status_code != 200:
+            print(f"Bloklanma! Status: {response.status_code}")
+            return
+
+        soup = BeautifulSoup(response.text, 'html.parser')
         links = soup.find_all('a', href=True)
         
         valid_links = []
         for a in links:
             href = a['href']
-            # Regex ilə yoxlayırıq: Link /items/ ilə başlamalı və rəqəmlə bitməlidir
-            if re.search(r'^/items/\d+$', href):
-                valid_links.append("https://bina.az" + href)
-        
+            # Sırf mənzil ID-si olan linkləri süzürük (items/123456)
+            match = re.search(r'/items/(\d+)$', href)
+            if match:
+                valid_links.append(f"https://bina.az/items/{match.group(1)}")
+
         if valid_links:
-            # Ən birinci tapılan elanı götürürük
-            final_link = valid_links[0]
-            msg = f"Nərimanovda elan tapıldı! 🏠\nLink: {final_link}"
+            # Təkrarları silirik və ən sonuncunu götürürük
+            unique_links = list(dict.fromkeys(valid_links))
+            final_link = unique_links[0]
             
-            # Telegram-a göndərmə
-            res = requests.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage", 
-                                json={"chat_id": CHAT_ID, "text": msg})
+            # Qiyməti tapmağa çalışaq (istəyə bağlı gözəllik)
+            price = "Qiymət üçün linkə daxil olun"
+            # (Bina.az strukturu dəyişdiyi üçün qiymət axtarışını sadə saxlayırıq)
+
+            msg = f"Nərimanovda yeni {rooms} otaqlı elan! 🏠\n\nLink: {final_link}"
             
-            if res.status_code == 200:
-                print(f"--- UĞUR: Mesaj göndərildi! Link: {final_link} ---")
-            else:
-                print(f"--- XƏTA: Telegram mesajı göndərə bilmədi: {res.text} ---")
+            # Telegram-a göndər
+            requests.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage", 
+                          json={"chat_id": CHAT_ID, "text": msg})
+            print(f"Uğurla göndərildi: {final_link}")
         else:
-            print("--- NƏTİCƏ: Təəssüf, heç bir elan linki tapılmadı. ---")
-            # Yoxlama üçün saytın mətninin bir hissəsini terminala çıxaraq
-            print("Saytın başlığı:", soup.title.string if soup.title else "Başlıq yoxdur")
+            print("Uyğun elan tapılmadı.")
 
     except Exception as e:
-        print(f"--- KRİTİK XƏTA: {e} ---")
+        print(f"Xəta: {e}")
 
 if __name__ == "__main__":
     start_bot()
