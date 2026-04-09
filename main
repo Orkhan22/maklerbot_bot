@@ -63,4 +63,5 @@ def start_bot():
         print(f"Xəta: {e}")
 
 if __name__ == "__main__":
-    start_bot()
+    start_bot()    # Bu Bina.az-ı yoxlayır
+    check_turbo()  # Bu Turbo.az-ı yoxlayır
