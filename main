@@ -1,41 +1,52 @@
 import requests
 from bs4 import BeautifulSoup
+import re
 
 TOKEN = "8666608099:AAFhdnrexdxUkfIeCpK_6zq1NdTEdQAVFKQ"
 CHAT_ID = "644928091"
 URL = "https://bina.az/baki/neriman-nerimanov/alqi-satqi/menziller/yeni-tikili/3-otaqli"
 
 def start_bot():
-    print("--- Bot real elan axtarışına başladı ---")
+    print("--- Bot geniş axtarışa başladı ---")
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
     }
     
     try:
-        response = requests.get(URL, headers=headers, timeout=20)
+        response = requests.get(URL, headers=headers, timeout=30)
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        # Bütün elan linklərini tapırıq
-        all_links = soup.find_all('a', href=True)
+        # Üsul 1: Saytdakı bütün linkləri (<a> teqlərini) tapırıq
+        links = soup.find_all('a', href=True)
         
-        real_link = None
-        for a in all_links:
+        valid_links = []
+        for a in links:
             href = a['href']
-            # ŞƏRT: Linkin içində '/items/' olmalıdır VƏ sonu rəqəmlə bitməlidir (məs: /items/423456)
-            # Bu, '/items/new' kimi səhv linkləri avtomatik silir
-            if href.startswith('/items/') and href.split('/')[-1].isdigit():
-                real_link = "https://bina.az" + href
-                break # İlk tapılan real elanı götür və dayan
+            # Regex ilə yoxlayırıq: Link /items/ ilə başlamalı və rəqəmlə bitməlidir
+            if re.search(r'^/items/\d+$', href):
+                valid_links.append("https://bina.az" + href)
         
-        if real_link:
-            msg = f"Nərimanovda yeni elan tapıldı! ✅\nLink: {real_link}"
-            requests.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage", json={"chat_id": CHAT_ID, "text": msg})
-            print(f"Uğurla göndərildi: {real_link}")
-        else:
-            print("Uyğun mənzil linki tapılmadı.")
+        if valid_links:
+            # Ən birinci tapılan elanı götürürük
+            final_link = valid_links[0]
+            msg = f"Nərimanovda elan tapıldı! 🏠\nLink: {final_link}"
             
+            # Telegram-a göndərmə
+            res = requests.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage", 
+                                json={"chat_id": CHAT_ID, "text": msg})
+            
+            if res.status_code == 200:
+                print(f"--- UĞUR: Mesaj göndərildi! Link: {final_link} ---")
+            else:
+                print(f"--- XƏTA: Telegram mesajı göndərə bilmədi: {res.text} ---")
+        else:
+            print("--- NƏTİCƏ: Təəssüf, heç bir elan linki tapılmadı. ---")
+            # Yoxlama üçün saytın mətninin bir hissəsini terminala çıxaraq
+            print("Saytın başlığı:", soup.title.string if soup.title else "Başlıq yoxdur")
+
     except Exception as e:
-        print(f"Xəta baş verdi: {e}")
+        print(f"--- KRİTİK XƏTA: {e} ---")
 
 if __name__ == "__main__":
     start_bot()
