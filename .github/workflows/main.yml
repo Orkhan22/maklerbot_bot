@@ -2,28 +2,29 @@ name: Bina AZ Bot
 
 on:
   schedule:
-    - cron: '*/15 * * * *' # Hər 15 dəqiqədən bir işləyir
-  workflow_dispatch: # Lazım olanda özün də düymə ilə işlədə biləsən
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Kodu kopyala
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Python-u quraşdır
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
-      - name: Kitabxanaları yüklə
-        run: pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          pip install requests beautifulsoup4
 
-      - name: Botu işə sal
+      - name: Run bot
         run: python main.py
 
-      - name: Dəyişiklikləri yadda saxla
+      - name: Commit and push changes
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
