@@ -3,65 +3,54 @@ from bs4 import BeautifulSoup
 
 TOKEN = "8666608099:AAFhdnrexdxUkfIeCpK_6zq1NdTEdQAVFKQ"
 CHAT_ID = "644928091"
-# Axtarış linkin (Nərimanov, 3 otaq, Yeni tikili)
-URL = "https://bina.az/baki/neriman-nerimanov/alqi-satqi/menziller/yeni-tikili/3-otaqli"
 
-def start_bot():
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    }
+# Linklər
+BINA_URL = "https://bina.az/baki/neriman-nerimanov/alqi-satqi/menziller/yeni-tikili/3-otaqli"
+TURBO_URL = "https://turbo.az/autos?q%5Bsort%5D=&q%5Bmake%5D%5B%5D=32&q%5Bmodel%5D%5B%5D=&q%5Bmodel%5D%5B%5D=group148&q%5Bmodel%5D%5B%5D=911&q%5Bmodel%5D%5B%5D=3237&q%5Bmodel%5D%5B%5D=3245&q%5Bmodel%5D%5B%5D=3238&q%5Bmodel%5D%5B%5D=3240&q%5Bmodel%5D%5B%5D=3241&q%5Bmodel%5D%5B%5D=3330&q%5Bmodel%5D%5B%5D=3248&q%5Bmodel%5D%5B%5D=8399&q%5Bmodel%5D%5B%5D=3249&q%5Bmodel%5D%5B%5D=3291&q%5Bused%5D=&q%5Bregion%5D%5B%5D=&q%5Bprice_from%5D=&q%5Bprice_to%5D=&q%5Bcurrency%5D=azn&q%5Bloan%5D=0&q%5Bbarter%5D=0&q%5Bcategory%5D%5B%5D=&q%5Byear_from%5D=2013&q%5Byear_to%5D=2015&q%5Bcolor%5D%5B%5D=&q%5Bfuel_type%5D%5B%5D=&q%5Bgear%5D%5B%5D=&q%5Btransmission%5D%5B%5D=&q%5Bengine_volume_from%5D=&q%5Bengine_volume_to%5D=&q%5Bpower_from%5D=&q%5Bpower_to%5D=&q%5Bmileage_from%5D=&q%5Bmileage_to%5D=&q%5Bonly_shops%5D=&q%5Bprior_owners_count%5D%5B%5D=&q%5Bseats_count%5D%5B%5D=&q%5Bmarket%5D%5B%5D=&q%5Bcrashed%5D=1&q%5Bpainted%5D=1&q%5Bfor_spare_parts%5D=0&q%5Bavailability_status%5D="
 
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+    "Accept-Language": "az-AZ,az;q=0.9,en-US;q=0.8,en;q=0.7"
+}
+
+def send_tg(message):
     try:
-        response = requests.get(URL, headers=headers, timeout=20)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Bütün elan bloklarını tapırıq
-        items = soup.find_all('div', class_='items-list-item')
+        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+        requests.post(url, json={"chat_id": CHAT_ID, "text": message, "parse_mode": "Markdown"}, timeout=10)
+    except:
+        print("Telegram mesajı göndərilə bilmədi")
 
-        if items:
-            first_item = items[0]
-            
-            # 1. Linki tapırıq
-            link_tag = first_item.find('a', href=True)
-            link = "https://bina.az" + link_tag['href'] if link_tag else "Link tapılmadı"
-            
-            # 2. Qiyməti tapırıq
-            price_val = first_item.find('span', class_='price-val')
-            price_cur = first_item.find('span', class_='price-cur')
-            
-            full_price = "Məlum deyil"
-            if price_val and price_cur:
-                full_price = f"{price_val.text.strip()} {price_cur.text.strip()}"
-            
-            # 3. Kiçik detalları tapırıq (məsələn: sahə, mərtəbə - adətən 'location' daxilində olur)
-            details = first_item.find('div', class_='location')
-            location_text = details.text.strip() if details else "Nərimanov"
-
-            # Telegram Mesajı Formatı
-            msg_text = (
-                f"🏠 *Nərimanovda yeni elan!*\n\n"
-                f"💰 *Qiymət:* {full_price}\n"
-                f"📍 *Yer:* {location_text}\n"
-                f"🛏 *Otaq:* 3 otaqlı\n\n"
-                f"🔗 [Elana keçid et]({link})"
-            )
-
-            # Mesajı göndəririk (Markdown istifadə edirik ki, qalın görünsün)
-            requests.post(
-                f"https://api.telegram.org/bot{TOKEN}/sendMessage", 
-                json={
-                    "chat_id": CHAT_ID, 
-                    "text": msg_text, 
-                    "parse_mode": "Markdown"
-                }
-            )
-            print(f"Uğurla göndərildi: {full_price} - {link}")
-        else:
-            print("Səhifədə elan bloku tapılmadı.")
-
+def check_bina():
+    try:
+        res = requests.get(BINA_URL, headers=HEADERS, timeout=25)
+        soup = BeautifulSoup(res.text, 'html.parser')
+        item = soup.find('div', class_='items-list-item')
+        if item:
+            link = "https://bina.az" + item.find('a')['href']
+            price = item.find('span', class_='price-val').text.strip() + " AZN"
+            send_tg(f"🏠 *Bina.az: Yeni mənzil!*\n💰 Qiymət: {price}\n🔗 [Baxmaq üçün kliklə]({link})")
     except Exception as e:
-        print(f"Xəta: {e}")
+        print(f"Bina xətası: {e}")
+
+def check_turbo():
+    try:
+        res = requests.get(TURBO_URL, headers=HEADERS, timeout=25)
+        soup = BeautifulSoup(res.text, 'html.parser')
+        # Turbo.az elanlarını tapmaq üçün daha dəqiq klass
+        item = soup.find('div', class_='products-i') or soup.select_one('.products-i')
+        
+        if item:
+            link_tag = item.find('a', class_='products-i__link')
+            if link_tag:
+                link = "https://turbo.az" + link_tag['href']
+                price = item.find('div', class_='product-price').text.strip()
+                name = item.find('div', class_='products-i__name').text.strip()
+                send_tg(f"🏎 *Turbo.az: {name}*\n💰 Qiymət: {price}\n🔗 [Baxmaq üçün kliklə]({link})")
+        else:
+            print("Turbo.az-da hələlik yeni elan tapılmadı.")
+    except Exception as e:
+        print(f"Turbo xətası: {e}")
 
 if __name__ == "__main__":
-    start_bot()    # Bu Bina.az-ı yoxlayır
-    check_turbo()  # Bu Turbo.az-ı yoxlayır
+    check_bina()
+    check_turbo()
