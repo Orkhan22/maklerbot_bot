@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 
 TOKEN = "8666608099:AAFhdnrexdxUkfIeCpK_6zq1NdTEdQAVFKQ"
 CHAT_ID = "644928091"
-URL = "https://bina.az/items"
+URL = "https://bina.az/baki/neriman-nerimanov/alqi-satqi/menziller/yeni-tikili/3-otaqli"
 
 def start_bot():
     print("--- ADDIM 1: Bot işə başladı ---")
