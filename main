@@ -1,44 +1,52 @@
 import requests
 from bs4 import BeautifulSoup
 
-# Məlumatlarını bura yaz
 TOKEN = "8666608099:AAFhdnrexdxUkfIeCpK_6zq1NdTEdQAVFKQ"
 CHAT_ID = "644928091"
-URL = "https://bina.az/items" # Yoxlamaq üçün bütün elanlar linki
+URL = "https://bina.az/items"
 
 def start_bot():
     print("--- ADDIM 1: Bot işə başladı ---")
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept-Language": "az,en-US;q=0.9,en;q=0.8"
+    }
     
     try:
-        print(f"--- ADDIM 2: {URL} ünvanına sorğu göndərilir ---")
         response = requests.get(URL, headers=headers, timeout=20)
-        print(f"--- ADDIM 3: Saytın cavabı (Status Code): {response.status_code} ---")
+        print(f"--- ADDIM 3: Saytın cavabı: {response.status_code} ---")
         
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        # Bina.az-da elan klasslarını axtarırıq
-        items = soup.select('.items-list-item') or soup.select('.items_list-item')
+        # Bina.az-da mənzil bloklarını tapmaq üçün bütün ehtimal olunan klasslar:
+        items = soup.find_all('div', class_='items-list-item') or \
+                soup.find_all('div', class_='items_list-item') or \
+                soup.select('.items-list-item') or \
+                soup.select('.item')
+        
         print(f"--- ADDIM 4: Tapılan elan sayı: {len(items)} ---")
         
-        if len(items) > 0:
+        if len(items) == 0:
+            # Əgər hələ də tapılmırsa, bütün 'a' teqlərini yoxlayaq (ehtiyat variant)
+            links = [a for a in soup.find_all('a', href=True) if '/items/' in a['href']]
+            print(f"--- EHTİYAT: 'items' tərkibli {len(links)} link tapıldı ---")
+            if links:
+                first_link = "https://bina.az" + links[0]['href']
+                msg = f"Bot mənzilləri tapdı! ✅\nİlk tapılan link: {first_link}"
+                requests.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage", json={"chat_id": CHAT_ID, "text": msg})
+                return
+
+        if items:
             item = items[0]
             link_tag = item.find('a', href=True)
             if link_tag:
                 full_link = "https://bina.az" + link_tag['href']
-                print(f"--- ADDIM 5: İlk elan tapıldı: {full_link} ---")
-                
-                # Telegram-a mesaj göndərmə testi
-                test_msg = f"Bot yoxlaması uğurludur! ✅\nSon elan: {full_link}"
-                t_url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-                t_res = requests.post(t_url, json={"chat_id": CHAT_ID, "text": test_msg})
-                print(f"--- ADDIM 6: Telegram cavabı: {t_res.status_code} ---")
-        else:
-            print("--- ADDIM 4: Təəssüf, heç bir elan klassı tapılmadı! ---")
+                requests.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage", 
+                             json={"chat_id": CHAT_ID, "text": f"Mənzil tapıldı! 🏠\nLink: {full_link}"})
+                print("--- ADDIM 6: Telegram mesajı göndərildi! ---")
             
     except Exception as e:
-        print(f"--- XƏTA BAŞ VERDİ: {e} ---")
+        print(f"--- XƏTA: {e} ---")
 
-# FUNKSİYANI ÇAĞIRIRIQ (Bu mütləq olmalıdır)
 if __name__ == "__main__":
     start_bot()
