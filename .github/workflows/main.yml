@@ -1,33 +1,22 @@
 name: Bina AZ Bot
 
 on:
-  schedule:
-    - cron: '*/15 * * * *'
-  workflow_dispatch:
+  workflow_dispatch: # Biz düyməni basanda işləsin
 
 jobs:
-  build:
+  run-bot:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Kodu götür
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: Python quraşdır
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
 
-      - name: Install dependencies
-        run: |
-          pip install requests beautifulsoup4
+      - name: Kitabxanaları yüklə
+        run: pip install requests beautifulsoup4
 
-      - name: Run bot
+      - name: Botu işlət
         run: python main.py
-
-      - name: Commit and push changes
-        run: |
-          git config --global user.name 'github-actions'
-          git config --global user.email 'github-actions@github.com'
-          git add seen_ids.txt
-          git commit -m "Update seen IDs" || exit 0
-          git push
