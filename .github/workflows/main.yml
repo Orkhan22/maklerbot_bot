@@ -1,7 +1,9 @@
 name: Bina AZ Bot
 
 on:
-  workflow_dispatch: # Biz düyməni basanda işləsin
+  schedule:
+    - cron: '*/15 * * * *' # Bu botu hər 15 dəqiqədən bir öz-özünə işlədir
+  workflow_dispatch: # Düymə də qalsın ki, istəyəndə özün də basasan
 
 jobs:
   run-bot:
