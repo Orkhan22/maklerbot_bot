@@ -12,4 +12,4 @@ jobs:
         with:
           python-version: '3.9'
       - run: pip install requests beautifulsoup4
-      - run: python main.py
+      - run: python main
